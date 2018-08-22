@@ -287,8 +287,19 @@ class Series(object):
     def __sub__(self, other):
         return self._binaryop(other, 'sub')
 
+    def convert_advanced(other):
+        if isinstance(other, (int, float, np.int32, np.float32,)):
+            empty = np.empty(len(RIGHT_OPERAND))
+            empty.fill(other)
+            other = Series(empty)
+        return other
+
     def __rsub__(self, other):
-        return self.__sub__(other)
+        if isinstance(other, (int, float, np.int32, np.float32,)):
+            empty = np.empty(len(self))
+            empty.fill(other)
+            other = Series(empty)
+        return other.__sub__(self)
 
     def __mul__(self, other):
         return self._binaryop(other, 'mul')
