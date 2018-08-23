@@ -294,7 +294,9 @@ class Series(object):
         #     empty = np.empty(len(self))
         #     empty.fill(other)
         #     other = Series(empty)
-        return other._column.binary_operator('sub', self._column)
+        other = self._normalize_binop_value(other)
+        outcol = other._column.binary_operator('sub', self._column)
+        return self._copy_construct(data=outcol)
 
 
 
