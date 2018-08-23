@@ -288,13 +288,15 @@ class Series(object):
         return self._binaryop(other, 'sub')
 
     def __rsub__(self, other):
-        if isinstance(other, (int, float,
-                              np.int32, np.int64,
-                              np.float32, np.float64)):
-            empty = np.empty(len(self))
-            empty.fill(other)
-            other = Series(empty)
+        # if isinstance(other, (int, float,
+        #                       np.int32, np.int64,
+        #                       np.float32, np.float64)):
+        #     empty = np.empty(len(self))
+        #     empty.fill(other)
+        #     other = Series(empty)
         return other._column.binary_operator('sub', self._column)
+
+
 
     def __mul__(self, other):
         return self._binaryop(other, 'mul')
