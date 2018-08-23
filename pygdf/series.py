@@ -296,9 +296,7 @@ class Series(object):
         return self._binaryop(other, 'mul')
 
     def __rmul__(self, other):
-        other = self._normalize_binop_value(other)
-        outcol = other._column.binary_operator('mul', self._column)
-        return self._copy_construct(data=outcol)
+        return self.__mul__(other)
 
     def __floordiv__(self, other):
         return self._binaryop(other, 'floordiv')
