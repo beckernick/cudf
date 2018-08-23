@@ -294,7 +294,7 @@ class Series(object):
             empty = np.empty(len(self))
             empty.fill(other)
             other = Series(empty)
-        return other.__sub__(self)
+        return other._column.binary_operator('sub', self._column)
 
     def __mul__(self, other):
         return self._binaryop(other, 'mul')
