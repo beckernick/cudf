@@ -1,7 +1,27 @@
+# cuDF 0.6.0 (Date TBD)
+
+## New Features
+
+- PR #539 Add Python bindings for replace function
+- PR #807 CSV Reader: Add byte_range parameter to specify the range in the input file to be read
+
+## Improvements
+
+- PR #730 Improve performance of `gdf_table` constructor
+- PR #532 CSV Reader: Use type dispatcher instead of switch block
+
+## Bug Fixes
+
+- PR #821 Fix flake8 issues revealed by flake8 update
+- PR #808 Resolved renamed `d_columns_valids` variable name
+- PR #780 CSV Reader: Fix scientific notation parsing and null values for empty quotes
+
+
 # cuDF 0.5.0 (28 Jan 2019)
 
 ## New Features
 
+- PR #722 Add bzip2 decompression support to `read_csv()`
 - PR #693 add ZLIB-based GZIP/ZIP support to `read_csv_strings()`
 - PR #411 added null support to gdf_order_by (new API) and cudf_table::sort
 - PR #525 Added GitHub Issue templates for bugs, documentation, new features, and questions
@@ -57,6 +77,7 @@
 - PR #766 Remove TravisCI references, remove unused variables from CMake, fix ARROW_VERSION in Cmake
 - PR #773 Add build-args back to Dockerfile and handle dependencies based on environment yml file
 - PR #781 Move thirdparty submodules to root and symlink in /cpp
+- PR #843 Fix broken cudf/python API examples, add new methods to the API index
 
 ## Bug Fixes
 
