@@ -285,8 +285,8 @@ class Series(object):
             return self._copy_construct(data=selvals, index=index)
 
         elif isinstance(arg, slice):
-            index = self.index[arg]         # slice index
-            col = self._column[arg]         # slice column
+            index = self.index[arg]  # slice index
+            col = self._column[arg]  # slice column
             return self._copy_construct(data=col, index=index)
         elif isinstance(arg, Number):
             # The following triggers a IndexError if out-of-bound
@@ -399,9 +399,9 @@ class Series(object):
                                    cols=cols, dtypes=dtypes,
                                    more_rows=more_rows,
                                    series_spacing=True)
-        return output + "\nName: {}, dtype: {}".format(self.name, str_dtype)\
+        return output + "\nName: {}, dtype: {}".format(self.name, str_dtype) \
             if self.name is not None else output + \
-            "\ndtype: {}".format(str_dtype)
+                                          "\ndtype: {}".format(str_dtype)
 
     def __str__(self):
         return self.to_string(nrows=10)
@@ -1224,6 +1224,15 @@ class Series(object):
     def sum_of_squares(self, dtype=None):
         return self._column.sum_of_squares(dtype=dtype)
 
+    def round(self, decimals=0):
+        """
+        """
+        if self.empty:
+            return self
+
+        rounded = cudautils.apply_round(self.data.to_gpu_array(), decimals)
+        return Series(rounded, name=self.name, index=self.index)
+
     def unique_k(self, k):
         warnings.warn("Use .unique() instead", DeprecationWarning)
         return self.unique()
@@ -1467,7 +1476,7 @@ class Series(object):
             return percentiles
 
         def _format_percentile_names(percentiles):
-            return ['{0}%'.format(int(x*100)) for x in percentiles]
+            return ['{0}%'.format(int(x * 100)) for x in percentiles]
 
         def _format_stats_values(stats_data):
             return list(map(lambda x: round(x, 6), stats_data))
@@ -1477,7 +1486,7 @@ class Series(object):
             names = ['count', 'mean', 'std', 'min'] + \
                     _format_percentile_names(percentiles) + ['max']
             data = [self.count(), self.mean(), self.std(), self.min()] + \
-                self.quantile(percentiles).to_array().tolist() + [self.max()]
+                   self.quantile(percentiles).to_array().tolist() + [self.max()]
             data = _format_stats_values(data)
 
             values_name = 'values'
@@ -1756,11 +1765,10 @@ class Series(object):
 
 register_distributed_serializer(Series)
 
-
 truediv_int_dtype_corrections = {
-        'int64': 'float64',
-        'int32': 'float32',
-        'int': 'float',
+    'int64': 'float64',
+    'int32': 'float32',
+    'int': 'float',
 }
 
 
