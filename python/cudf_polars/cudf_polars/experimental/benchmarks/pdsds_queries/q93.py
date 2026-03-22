@@ -61,66 +61,48 @@ def polars_impl(run_config: RunConfig) -> QueryResult:
 
     reason_desc = params["reason_desc"]
 
-    store_sales = get_data(run_config.dataset_path, "store_sales", run_config.suffix)
+    store_sales = get_data(
+        run_config.dataset_path, "store_sales", run_config.suffix
+    ).select(
+        [
+            "ss_item_sk",
+            "ss_ticket_number",
+            "ss_customer_sk",
+            "ss_quantity",
+            "ss_sales_price",
+        ]
+    )
     store_returns = get_data(
         run_config.dataset_path, "store_returns", run_config.suffix
-    )
+    ).select(["sr_item_sk", "sr_ticket_number", "sr_reason_sk", "sr_return_quantity"])
     reason = get_data(run_config.dataset_path, "reason", run_config.suffix)
+
+    filtered_reason = reason.filter(pl.col("r_reason_desc") == reason_desc).select(
+        "r_reason_sk"
+    )
+
+    # The SQL uses LEFT JOIN store_returns ... , reason WHERE sr_reason_sk = r_reason_sk.
+    # The WHERE on sr_reason_sk forces it to be non-NULL, so the LEFT JOIN is effectively
+    # an INNER JOIN. We pre-filter returns by reason to avoid a cross join with reason.
+    filtered_returns = store_returns.join(
+        filtered_reason, left_on="sr_reason_sk", right_on="r_reason_sk"
+    ).select(["sr_item_sk", "sr_ticket_number", "sr_return_quantity"])
+
     return QueryResult(
         frame=(
             store_sales.join(
-                store_returns,
+                filtered_returns,
                 left_on=["ss_item_sk", "ss_ticket_number"],
                 right_on=["sr_item_sk", "sr_ticket_number"],
-                how="left",
-            )
-            .join(reason, how="cross")
-            .filter(
-                (pl.col("sr_reason_sk") == pl.col("r_reason_sk"))
-                & (pl.col("r_reason_desc") == reason_desc)
             )
             .with_columns(
-                [
-                    pl.when(pl.col("sr_return_quantity").is_not_null())
-                    .then(
-                        pl.when(
-                            pl.col("ss_quantity").is_not_null()
-                            & pl.col("sr_return_quantity").is_not_null()
-                            & pl.col("ss_sales_price").is_not_null()
-                        )
-                        .then(
-                            (pl.col("ss_quantity") - pl.col("sr_return_quantity"))
-                            * pl.col("ss_sales_price")
-                        )
-                        .otherwise(None)
-                    )
-                    .otherwise(
-                        pl.when(
-                            pl.col("ss_quantity").is_not_null()
-                            & pl.col("ss_sales_price").is_not_null()
-                        )
-                        .then(pl.col("ss_quantity") * pl.col("ss_sales_price"))
-                        .otherwise(None)
-                    )
-                    .alias("act_sales")
-                ]
+                (
+                    (pl.col("ss_quantity") - pl.col("sr_return_quantity"))
+                    * pl.col("ss_sales_price")
+                ).alias("act_sales")
             )
             .group_by("ss_customer_sk")
-            .agg(
-                [
-                    pl.col("act_sales").count().alias("sumsales_count"),
-                    pl.col("act_sales").sum().alias("sumsales_sum"),
-                ]
-            )
-            .select(
-                [
-                    "ss_customer_sk",
-                    pl.when(pl.col("sumsales_count") == 0)
-                    .then(None)
-                    .otherwise(pl.col("sumsales_sum"))
-                    .alias("sumsales"),
-                ]
-            )
+            .agg(pl.col("act_sales").sum().alias("sumsales"))
             .sort(["sumsales", "ss_customer_sk"], nulls_last=True)
             .limit(100)
         ),
