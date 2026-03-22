@@ -121,13 +121,15 @@ def polars_impl(run_config: RunConfig) -> QueryResult:
     )
     catalog_returns = get_data(
         run_config.dataset_path, "catalog_returns", run_config.suffix
-    )
+    ).select(["cr_order_number", "cr_item_sk", "cr_return_quantity", "cr_return_amount"])
     store_sales = get_data(run_config.dataset_path, "store_sales", run_config.suffix)
     store_returns = get_data(
         run_config.dataset_path, "store_returns", run_config.suffix
-    )
+    ).select(["sr_ticket_number", "sr_item_sk", "sr_return_quantity", "sr_return_amt"])
     web_sales = get_data(run_config.dataset_path, "web_sales", run_config.suffix)
-    web_returns = get_data(run_config.dataset_path, "web_returns", run_config.suffix)
+    web_returns = get_data(
+        run_config.dataset_path, "web_returns", run_config.suffix
+    ).select(["wr_order_number", "wr_item_sk", "wr_return_quantity", "wr_return_amt"])
     item = get_data(run_config.dataset_path, "item", run_config.suffix)
     date_dim = get_data(run_config.dataset_path, "date_dim", run_config.suffix)
 
@@ -135,9 +137,13 @@ def polars_impl(run_config: RunConfig) -> QueryResult:
         ["i_item_sk", "i_brand_id", "i_class_id", "i_category_id", "i_manufact_id"]
     )
 
+    filtered_dates = date_dim.filter(
+        pl.col("d_year").is_in([year, year - 1])
+    ).select(["d_date_sk", "d_year"])
+
     catalog_component = (
         catalog_sales.join(filtered_items, left_on="cs_item_sk", right_on="i_item_sk")
-        .join(date_dim, left_on="cs_sold_date_sk", right_on="d_date_sk")
+        .join(filtered_dates, left_on="cs_sold_date_sk", right_on="d_date_sk")
         .join(
             catalog_returns,
             left_on=["cs_order_number", "cs_item_sk"],
@@ -170,7 +176,7 @@ def polars_impl(run_config: RunConfig) -> QueryResult:
 
     store_component = (
         store_sales.join(filtered_items, left_on="ss_item_sk", right_on="i_item_sk")
-        .join(date_dim, left_on="ss_sold_date_sk", right_on="d_date_sk")
+        .join(filtered_dates, left_on="ss_sold_date_sk", right_on="d_date_sk")
         .join(
             store_returns,
             left_on=["ss_ticket_number", "ss_item_sk"],
@@ -203,7 +209,7 @@ def polars_impl(run_config: RunConfig) -> QueryResult:
 
     web_component = (
         web_sales.join(filtered_items, left_on="ws_item_sk", right_on="i_item_sk")
-        .join(date_dim, left_on="ws_sold_date_sk", right_on="d_date_sk")
+        .join(filtered_dates, left_on="ws_sold_date_sk", right_on="d_date_sk")
         .join(
             web_returns,
             left_on=["ws_order_number", "ws_item_sk"],
